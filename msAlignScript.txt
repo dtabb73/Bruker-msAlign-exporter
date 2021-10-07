@@ -1,0 +1,99 @@
+Dim Chrom, Spec, RT,deconSpec, bUseSNAP, Filename, RTtempEnd, objMasses, objMassList, currentSpectrum 
+ 
+'***************************************************************************************** 
+'***************************************************************************************** 
+bUseSNAP = True 
+Const RTStart = 1
+Const RTEnd = 95
+Const LowMass = 5000  'Mass Range for peak picking (SNAP) 
+Const HighMass = 60000  'Mass Range for peak picking (SNAP) 
+Const WindowSize = 1  'Window size for spectrum averages (min) 
+Const Extension = ".csv" 
+Const Header = "RT / min,MW,Intensity" 
+'***************************************************************************************** 
+'***************************************************************************************** 
+ 
+ 
+ 
+Filename = GetExportFileName(Extension) 
+Delete_File (FileName) 
+ 
+Set objMasses = CreateObject("Scripting.FileSystemObject")   
+Set objMassList = objMasses.OpenTextFile(FileName, 8, True) 
+objMassList.WriteLine(Analysis.Name) 
+objMassList.WriteLine(Header) 
+ 
+  
+Call ResetPeakfinder() 
+Analysis.compounds.clear 
+For RT = RTStart To RTEnd Step WindowSize 
+  
+RTtempEnd = RT+WindowSize 
+ 
+Analysis.ClearChromatogramRangeSelections 
+  
+Analysis.AddChromatogramRangeSelection RT, RTtempEnd 
+ 
+Analysis.Chromatograms(1).AverageMassSpectrum False, True  
+currentSpectrum = Analysis.Spectra.Count 
+Set spec = Analysis.Spectra(currentSpectrum) 
+spec.deconvolute 
+Set deconSpec = spec.childspectra(1) 
+Call SetMethodParametersPeakfinder() 
+deconSpec.masslistfind LowMass,HighMass 
+Call ResetPeakfinder() 
+Call WriteToCSV(deconSpec, RT, RTtempEnd) 
+ 
+Next 
+Analysis.Save 
+Form.Close 
+ 
+ 
+ 
+Sub SetMethodParametersPeakfinder()  
+    Dim oPeakFinderParameters  
+    Set oPeakFinderParameters = Analysis.Method.MassListParameters()  
+    If bUseSNAP = True Then  
+        oPeakFinderParameters.DetectionAlgorithm = 2 ' 3 means Sum; 2 means SNAP; 0 means APEX  
+    Else  
+        oPeakFinderParameters.DetectionAlgorithm = 3 ' 3 means Sum; 2 means SNAP; 0 means APEX  
+    End If  
+End Sub   
+ 
+Sub ResetPeakfinder  
+    Dim oPeakFinderParameters  
+    Set oPeakFinderParameters = Analysis.Method.MassListParameters()  
+    oPeakFinderParameters.DetectionAlgorithm = 3 ' 3 means Sum; 2 means SNAP; 0 means APEX  
+End Sub  
+ 
+Function WriteToCSV(spectrum, RT, RTtempEnd) 
+ 
+Dim  Peaks, Peak, delim 
+delim = "," 
+  
+  
+Set Peaks = spectrum.MSPeakList 
+For Each Peak In Peaks 
+'WScript.Echo(Peak.m_over_z) 
+objMassList.WriteLine(RT & "-" & RTtempEnd & delim & Peak.m_over_z & delim & Peak.Intensity) 
+Next 
+ 
+ 
+End Function 
+ 
+Function GetExportFileName(sExtension)  
+    Dim aFileNames      
+    aFileNames = split(Analysis.Name,".d",-1,1)  
+      
+    GetExportFileName = Analysis.Path & "\" & aFileNames(0) & sExtension  
+End Function  
+ 
+Sub Delete_File (FileName)      
+  
+Dim fso      
+Set fso = CreateObject("Scripting.FileSystemObject")        
+If fso.FileExists(FileName) Then 
+fso.DeleteFile(FileName)          
+End If             
+  
+End Sub
