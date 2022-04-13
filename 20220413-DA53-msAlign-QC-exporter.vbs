@@ -25,13 +25,13 @@ Dim   PkCountMinimum, PkCountQuartile1, PkCountMedian, PkCountQuartile3, PkCount
 
 '***** Run deconvolution in SNAP / MaxEnt / AutoMSn
 '***** Configure for SNAP peak picking 
-'Analysis.Method.MassListParameters.DetectionAlgorithm = 2 
+Analysis.Method.MassListParameters.DetectionAlgorithm = 2 
 '***** Just select everything for peak picking 
-'Analysis.ClearChromatogramRangeSelections 
-'Analysis.AddChromatogramRangeSelection 0, 1000
-'Analysis.FindAutoMSn  
-'On Error Resume Next  
-'Analysis.Save
+Analysis.ClearChromatogramRangeSelections 
+Analysis.AddChromatogramRangeSelection 0, 1000
+Analysis.FindAutoMSn  
+On Error Resume Next  
+Analysis.Save
  
 '***** Set up our output file for writing 
 Set objFSO = CreateObject("Scripting.FileSystemObject")  
